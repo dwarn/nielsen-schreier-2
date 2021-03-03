@@ -1,0 +1,8 @@
+[package]
+name = "nielsen"
+version = "0.1"
+lean_version = "leanprover-community/lean:3.27.0"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "9f0f05eee872a4fa66fa15d51b0ba1c1cf58c9b4"}
