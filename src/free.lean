@@ -5,6 +5,7 @@ import algebra.category.Group
        category_theory.elements
        quiver
        to_mathlib
+       displayed
 
 open category_theory
 
@@ -46,80 +47,84 @@ end
 
 section covering_map
 
-variables {G : Groupoid} (A : subquiver ♯G.α) (F : G.α ⥤ Type*)
+variables {G : Groupoid} {F : G.α ⥤ Type*} {X : Groupoid} (x : F.elements → X.α)
 
--- pull back a subquiver to the total category
-def pullback_subquiver : subquiver ♯F.elements :=
-λ a b, { f | f.val ∈ A a.1 b.1 }
+def homsets {a b : G.α} (f : a ⟶ b) : Type* :=
+Π (s : F.obj a) (t : F.obj b) (h : t = F.map f s),
+  x ⟨a, s⟩ ⟶ x ⟨b, t⟩
 
-section temp
+variable {x}
 
-variables {X : Groupoid} (x : F.elements → X.α)
-include X x
+lemma homset_heq {a b : G.α} {p q : a ⟶ b} {P : homsets x p} {Q : homsets x q} (h : p = q)
+  (hs : ∀ (s : F.obj a), P s _ rfl = Q s _ (by rw h)) : P == Q :=
+by { cases h, apply heq_of_eq, funext, cases x_3, apply hs }
 
-structure Y := (of : G.α)
-
-variables {F x}
-def homsets : Y F x → Y F x → Type* :=
-λ a b, Σ f : a.of ⟶ b.of,
-  Π (s : F.obj a.of) (t : F.obj b.of) (h : t = F.map f s),
-    x ⟨a.of, s⟩ ⟶ x ⟨b.of, t⟩
-
-lemma homset_eq (a b : Y F x) (f g : homsets a b) :
- f = g ↔ ∃ (fg : f.fst = g.fst), ∀ s, f.snd s _ rfl = g.snd s _ (by rw [fg]) :=
-begin
-  split,
-  { rintro ⟨⟩, use rfl, intros, refl },
-  { cases f, cases g, rintros ⟨⟨⟩, hh⟩, refine sigma.eq rfl _, funext, cases x_3, apply hh },
-end
-
-lemma snd_congr {a b : Y F x} {f : homsets a b} {s s' : F.obj a.of} {t t' : F.obj b.of}
-  {h : t = F.map f.fst s} (hs : s = s') (ht : t = t') :
-    f.snd s t h = eq_to_hom (by rw hs) ≫ f.snd s' t' (by rwa [hs, ht] at h) ≫ eq_to_hom (by rw ht) :=
+-- this is a complete triviality, but it seems we need to state it in order to do dependent
+-- rewriting
+lemma hs_congr {a b : G.α} {p : a ⟶ b} (P : homsets x p) {s s' : F.obj a} {t t' : F.obj b}
+  {h : t = F.map p s} (hs : s = s') (ht : t = t') :
+    P s t h = eq_to_hom (by rw hs) ≫ P s' t' (by rwa [hs, ht] at h) ≫ eq_to_hom (by rw ht) :=
 by { cases hs, cases ht, simp }
 
--- we construct a groupoid with the same objects as G,
--- where a morphism a ⟶ b is such a morphism f in G together
--- with a choice of morphisms in X for all morphisms above f in F.elements
-instance : groupoid (Y F x) :=
-{ hom := homsets,
-  id := λ a, ⟨𝟙 a.of, λ s t h, eq_to_hom (by simp [h])⟩,
-  comp := λ a b c G H, ⟨G.fst ≫ H.fst, λ s t h, G.snd s _ rfl ≫ H.snd _ t (by simp [h])⟩,
-  id_comp' := begin 
-    intros a b f, 
-    rw homset_eq,
-    refine ⟨by simp, _⟩,
-    intro s,
-    change _ ≫ f.snd (F.map (𝟙 a.of) s) _ _ = _,
-    have : F.map (𝟙 a.of) s = s,
-    { simp },
-    rw snd_congr this rfl,
-    simp,
-  end,
-  comp_id' := begin
-    intros a b f,
-    rw homset_eq,
-    refine ⟨by simp, _⟩, 
-    intro s,
-    change _ ≫ eq_to_hom _ = f.snd s (F.map (f.fst ≫ 𝟙 b.of) s) _,
-    have : F.map (f.fst ≫ 𝟙 b.of) s = F.map f.fst s,
-    { simp },
-    rw snd_congr rfl this,
-    simp,
-  end,
-  assoc' := begin
-    intros,
-    rw homset_eq,
-    refine ⟨by simp, _⟩,
-    intro s,
-    change (_ ≫ _) ≫ _ = _ ≫ _ ≫ _,
+-- we could get a displayed category when G is only a category, and then specialise to groupoids
+def todo_name_this : displayed_groupoid G.α :=
+{ obj := λ _, true, -- use true instead of punit for judgemental proof irrelevance
+  mor := λ a b f _ _, Π (s : F.obj a) (t : F.obj b) (h : t = F.map f s),
+                      x ⟨a, s⟩ ⟶ x ⟨b, t⟩,
+  id := λ a _ s t h, eq_to_hom (by simp [h]),
+  comp := λ a b c f g _ _ _ F G s t h, F s _ rfl ≫ G _ t (by simp [h]),
+  inv := λ a b _ _ p P s t h, inv (P t s (by { rw h,
+    exact (functor_to_types.map_hom_map_inv_apply F ((groupoid.iso_equiv_hom _ _).symm p) s).symm })), -- how to make simp find the above?
+  id_comp := begin
+      intros a b _ _ p P,
+      apply homset_heq (category.id_comp _),
+      intro s,
+      rw hs_congr P (functor_to_types.map_id_apply F s) rfl,
+      simp,
+    end,
+  comp_id := begin
+      intros a b _ _ p P,
+      apply homset_heq (category.comp_id _),
+      intro s,
+      have : F.map (p ≫ 𝟙 b) s = F.map p s,
+      { rw [category.comp_id] },
+      rw hs_congr P rfl this,
+      simp,
+    end,
+  assoc := begin
+      intros a b c d _ _ _ _ p q r P Q R,
+      apply homset_heq (category.assoc _ _ _),
+      intro s,
+      have : F.map (p ≫ q) s = F.map q (F.map p s),
+      { apply functor_to_types.map_comp_apply },
+      rw [hs_congr Q rfl this, hs_congr R this rfl],
+      simp,
+    end,
+  inv_comp := begin
+      intros a b _ _ p P, 
+      apply homset_heq (groupoid.inv_comp _),
+      intro s,
+      change inv _ ≫ _ = eq_to_hom _,
+      have : F.map (groupoid.inv p ≫ p) s = s,
+      { rw groupoid.inv_comp, apply functor_to_types.map_id_apply },
+      rw hs_congr P rfl this,
+      simp,
+    end,
+  comp_inv := begin
+      intros a b _ _ p P, 
+      apply homset_heq (groupoid.comp_inv _),
+      intro s,
+      change _ ≫ inv _ = eq_to_hom _,
+      have : F.map (p ≫ groupoid.inv p) s = s,
+      { rw groupoid.comp_inv, apply functor_to_types.map_id_apply },
+      rw hs_congr P this rfl,
+      simp,
+    end }
 
-  end,
-  inv := sorry,
-  inv_comp' := sorry,
-  comp_inv' := sorry }
-
-end temp
+-- we could define this wrt to arbitrary functors
+def subquiver_pullback {C} [category C] (F : C ⥤ Type*) (A : subquiver ♯C) :
+  subquiver ♯F.elements :=
+λ a b, { f | f.val ∈ A a.fst b.fst }
 
 -- Given an action of a free groupoid, its category of elements
 -- is freely generated by the pullback subquiver.
