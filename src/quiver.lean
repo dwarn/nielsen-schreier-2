@@ -1,5 +1,6 @@
 import category_theory.concrete_category.bundled logic.unique
        category_theory.category.Cat
+       category_theory.single_obj
        to_mathlib
 
 open category_theory
@@ -44,10 +45,19 @@ def sub_hom {G} {q : quiver G} (p : subquiver q) : ¡p →[id] q :=
 
 inductive path {G : Type u} (p : quiver.{v} G) (a : G) : G → Type (max u v)
 | nil  : path a
-| cons : ∀ (b c : G), path b → p b c → path c
+| cons : Π (b c : G), path b → p b c → path c
 
 class is_tree {G : Type u} (p : quiver G) (a : G) :=
 (unique_path : Π (b : G), unique (path p a b))
 
 def quiver_sum {G} (p q : quiver G) : quiver G :=
 λ a b, p a b ⊕ q a b
+
+def opposite_quiver {G} (p : quiver G) : quiver G :=
+flip p
+
+def subquiver_equiv (M) [monoid M] :
+  subquiver (♯single_obj M) ≃ set M :=
+{ to_fun := λ A, {x | x ∈ A (single_obj.star _) (single_obj.star _)},
+  inv_fun := λ A a b, A,
+  left_inv := by tidy, right_inv := by tidy }
