@@ -1,5 +1,5 @@
 import algebra.category.Group category_theory.category.Groupoid category_theory.single_obj category_theory.functor
-       category_theory.elements quiver to_mathlib displayed
+       category_theory.elements quiver to_mathlib displayed category_theory.action
 
 open category_theory
 
@@ -25,14 +25,14 @@ begin
     change ∀ x : punit → X.α, _,
     rw function.surjective.forall (const_unit_surjective X.α),
     intros x f,
-    specialize hfree (Group.of $ End x) (λ a, @f (single_obj.star G) (single_obj.star G) a),
+    specialize hfree ⟨End x⟩ (λ a, @f (single_obj.star G) (single_obj.star G) a),
     refine ((functor_equiv x).symm.exists_unique_congr _).mp hfree,
     intro g,
     rw [out_of_unit, out_of_unit],
     refl, },
   { intros hfree X f,
     let x := single_obj.star X.α,
-    specialize hfree (Groupoid.of $ single_obj X.α) (λ _, x)
+    specialize hfree ⟨single_obj X.α⟩ (λ _, x)
       (λ _ _ a, f a),
     refine ((functor_equiv x).symm.exists_unique_congr _).mpr hfree,
     intro g,
@@ -310,5 +310,69 @@ begin
     },
   },
 end
+
+lemma free_groupoid_induction {G : Groupoid} {A : subquiver ♯G.α} {hf : is_free_groupoid G A}
+  {P : Π {a b : G.α}, (a ⟶ b) → Prop}
+    (h_id : ∀ a, P (𝟙 a))
+    (h_comp : ∀ {a b c} {f : a ⟶ b} {g : b ⟶ c}, P f → P g → P (f ≫ g))
+    (h_inv : ∀ {a b} {f : a ⟶ b}, P f → P (inv f))
+    (h_base : ∀ {a b} (f ∈ A a b), P f)
+    : ∀ a b (f : a ⟶ b), P f :=
+let subgpd : disp_groupoid G.α :=
+{ obj := λ _ , unit,
+  mor := λ _ _ p _ _, plift (P p),
+  id := λ a _, plift.up (h_id _),
+  comp := λ _ _ _ _ _ _ _ _ p q, plift.up (h_comp p.down q.down),
+  inv := λ _ _ _ _ _ p, plift.up (h_inv p.down),
+  id_comp  := by { intros, cases F, apply heq_of_eq_mp; simp },
+  comp_id  := by { intros, cases F, apply heq_of_eq_mp; simp },
+  assoc    := by { intros, cases F, apply heq_of_eq_mp; simp },
+  inv_comp := by { intros, cases F, apply heq_of_eq_mp; simp },
+  comp_inv := by { intros, cases F, apply heq_of_eq_mp; simp },
+ } in
+begin
+  rcases hf subgpd.total (λ a, ⟨a, ()⟩)
+  (λ a b p, ⟨p.val, plift.up (h_base p.val p.property)⟩) with ⟨Q, hQ, _⟩,
+  intros,
+  convert (Q.map f).snd.down,
+  set R : functorial id := functorial_comp Q subgpd.to_disp_cat.π,
+  change (functorial_id _).map f = R.map f,
+  congr,
+  rw free_groupoid_ext,
+  funext,
+  change e.val = ((♮Q ⊚ sub_hom A) e).fst,
+  rw ←hQ,
+  exact hf,
+end
+
+-- being a free group is an isomorphism invariant
+lemma is_free_group_mul_equiv {G H : Group.{u}} (A : set G) (h : G ≃* H) :
+  is_free_group G A ↔ is_free_group H (equiv.set.congr h.to_equiv A) :=
+begin
+  apply forall_congr,
+  intro X,
+  set hh := (equiv.Pi_congr_left' _ $ equiv.set.congr.equiv h.to_equiv A),
+  apply equiv.forall_congr hh,
+  intro f,
+  apply equiv.exists_unique_congr (iso_hom_equiv (iso_of_mul_equiv h)),
+  intro F,
+  convert hh.apply_eq_iff_eq_symm_apply.symm,
+  rw ←hh.apply_eq_iff_eq_symm_apply,
+  refl,
+end
+
+lemma End_mul_equiv_subgroup {G : Group} (H : subgroup G) : 
+  @End (action_category G (quotient_group.quotient H)) _ 
+        ⟨single_obj.star G, quotient_group.mk 1⟩ ≃* H := 
+begin
+  refine mul_equiv.trans _ _,
+  { exact @mul_action.stabilizer G (quotient_group.quotient H) _  _ (quotient_group.mk 1) },
+  { apply_instance },
+  { apply mul_equiv.refl },
+  { rw stabilizer_of_coset_action },
+end
+
+--theorem aut_is_free {G : Groupoid} {A : subquiver ♯G.α} {h : is_free_groupoid G A}
+  --(a : G.α) : ∃ B : set (Aut a), is_free_group ⟨Aut a⟩ B := sorry
 
 end covering_map

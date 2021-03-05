@@ -1,4 +1,4 @@
-import category_theory.single_obj category_theory.elements
+import category_theory.single_obj category_theory.elements algebra.category.Group group_theory.group_action
 
 open category_theory function
 universes v v₁ v₂ u u₁ u₂
@@ -57,5 +57,25 @@ lemma heq_congr_arg₂ {A : Sort u} {P Q : A → Sort*} (f : Π a, P a → Q a) 
 ∀ a b c d, a = b → c == d → f a c == f b d :=
 by cc
 
-example {A B C} (a : A)(b : B) (c : C) (h : a == b) (t : a == c) : b == c :=
- by refine (heq.symm h).trans t
+def equiv.set.congr.equiv {A B} (h : A ≃ B) (s : set A) : s ≃ (equiv.set.congr h s) :=
+{ to_fun := λ x, ⟨h x.val, ⟨_, x.property, rfl⟩⟩,
+  inv_fun := λ y, ⟨h.symm y, by { have : y.val ∈ _ '' _ := y.property,
+              rw h.image_eq_preimage at this,
+              exact this, }⟩,
+  left_inv := by tidy,
+  right_inv := by tidy }
+
+-- isomorphic objects have equivalent homsets
+def iso_hom_equiv {C} [category C] {a b c : C} (h : a ≅ b) : (a ⟶ c) ≃ (b ⟶ c) := 
+{ to_fun := (≫) h.inv,
+  inv_fun := (≫) h.hom,
+  left_inv := by tidy,
+  right_inv := by tidy }
+
+def iso_of_mul_equiv {G H : Group} (h : G.α ≃* H.α) : G ≅ H :=
+{ hom := h.to_monoid_hom,
+  inv := h.symm.to_monoid_hom, }
+
+lemma stabilizer_of_coset_action {G} [group G] {H : subgroup G} :
+  @mul_action.stabilizer G (quotient_group.quotient H) _ _ (quotient_group.mk 1) = H :=
+by { ext, change _ = _ ↔ _, rw eq_comm, convert quotient_group.eq, simp }

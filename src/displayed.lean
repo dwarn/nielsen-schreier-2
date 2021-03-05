@@ -6,8 +6,8 @@ import category_theory.category.Cat category_theory.category.Groupoid to_mathlib
 open category_theory
 
 structure disp_cat (C) [category C] :=
-(obj  : C → Type*) -- could try putting Sort* here, but category_struct wants Type
-(mor  : Π {a b : C}, (a ⟶ b) → obj a → obj b → Type*)
+(obj  : C → Sort*) 
+(mor  : Π {a b : C}, (a ⟶ b) → obj a → obj b → Sort*)
 (id   : Π {a : C} (x : obj a), mor (𝟙 a) x x)
 (comp : Π {a b c : C} {f : a ⟶ b} {g : b ⟶ c}
         {x : obj a} {y : obj b} {z : obj c},
@@ -24,9 +24,9 @@ structure disp_cat (C) [category C] :=
 structure disp_groupoid (G) [groupoid G] extends disp_cat G :=
 (inv : Π {a b : G} {x : obj a} {y : obj b} {f : a ⟶ b}, mor f x y → mor (inv f) y x)
 (inv_comp : ∀ {a b : G} {f : a ⟶ b} {x : obj a} {y : obj b} (F : mor f x y),
-  comp (inv F) F == id y)
+  comp (inv F) F == id y . obviously)
 (comp_inv : ∀ {a b : G} {f : a ⟶ b} {x : obj a} {y : obj b} (F : mor f x y),
-  comp F (inv F) == id x)
+  comp F (inv F) == id x . obviously)
 
 -- a displayed category is also a genuine category
 def disp_cat.total {C} [category C] (D : disp_cat C) : Cat :=
@@ -64,7 +64,7 @@ def terminal_disp (C) [category C] : disp_cat C :=
   id   := λ _ _, (),
   comp := λ _ _ _ _ _ _ _ _ _ _, () }
 
-def terminal_functorial (C) [category C] : @functorial C _ _ (disp_cat.total (terminal_disp C)).str (λ c, ⟨c, ()⟩) :=
+def terminal_functorial (C) [category C] : @functorial C _ _ (terminal_disp C).total.str (λ c, ⟨c, ()⟩) :=
 { map := λ a b f, ⟨f, ()⟩ }
 
 -- given a section of the projection functor which is strict on objects,
