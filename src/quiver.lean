@@ -47,7 +47,7 @@ namespace quiver
 
 inductive path {G : Type u} (p : quiver.{v} G) (a : G) : G → Type (max u v)
 | nil  : path a
-| cons : Π (b c : G), path b → p b c → path c
+| cons : Π {b c : G}, path b → p b c → path c
 
 class is_tree {G : Type u} (p : quiver G) (a : G) :=
 (favourite : Π (b : G), p.path a b)

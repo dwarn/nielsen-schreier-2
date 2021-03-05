@@ -29,8 +29,8 @@ variables {G : Groupoid.{u 0}} {A : subquiver ♯G.α}
 
 def path_to_hom : Π {a : G.α}, (¡T).path r a → (r ⟶ a)
 | _ quiver.path.nil := 𝟙 r
-| _ (quiver.path.cons a b p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ f.val
-| _ (quiver.path.cons a b p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv f.val
+| _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ f.val
+| _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv f.val
 
 variable [(¡T).is_tree r]
 
@@ -64,11 +64,11 @@ begin
     favourite_hom, favourite_hom],
   rintro (h | h),
   { set to_b : (¡T).path r b :=
-      quiver.path.cons a b (quiver.is_tree.favourite _) ⟨sum.inl e, h⟩,
+      quiver.path.cons (quiver.is_tree.favourite _) ⟨sum.inl e, h⟩,
     have : to_b = _ := quiver.is_tree.is_favourite _,
     rw ←this, refl },
   { set to_a : (¡T).path r a :=
-      quiver.path.cons b a (quiver.is_tree.favourite _) ⟨sum.inr e, h⟩,
+      quiver.path.cons (quiver.is_tree.favourite _) ⟨sum.inr e, h⟩,
     have : to_a = _ := quiver.is_tree.is_favourite _,
     rw [←this, path_to_hom],
     simp only [is_iso.inv_hom_id, category.comp_id, category.assoc], },

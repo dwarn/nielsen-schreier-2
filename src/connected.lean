@@ -41,8 +41,8 @@ begin
     { exact hf }, { cc }, { cc }, { cc },
     intros a b p hp,
     split; refine nonempty.map _; intro q,
-    { apply quiver.path.cons _ _ q (sum.inl ⟨p, hp⟩) },
-    { apply quiver.path.cons _ _ q (sum.inr ⟨p, hp⟩) }, },
+    { apply quiver.path.cons q (sum.inl ⟨p, hp⟩) },
+    { apply quiver.path.cons q (sum.inr ⟨p, hp⟩) }, },
   intro a, cases preconnected_groupoid.nonempty_hom root a,
   exact (claim root a val).mp ⟨quiver.path.nil⟩,
 end
