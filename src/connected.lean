@@ -29,20 +29,25 @@ by { intros a b, change nonempty { g : G // _ },
   refine nonempty_subtype.mpr _, exact @pretransitive.trans G X _ _ _ _ _  } }
 
 -- a rooted quiver is `directed_conneted` if there is a path from root to every other node
-def directed_connected {G} (p : quiver G) (root : G) := ∀ a, nonempty (p.path root a)
+class directed_connected {G} [inhabited G] (p : quiver G) :=
+(nonempty_path : ∀ a, nonempty (p.path (default _) a))
+
+attribute [instance] preconnected_groupoid.nonempty_hom
+attribute [instance] directed_connected.nonempty_path
 
 -- a free groupoid is preconnected only if the underlying graph is connected, ish
-lemma free_groupoid_directed_connected {G : Groupoid} [preconnected_groupoid G.α] {A : subquiver ♯G.α}
-  (hf : is_free_groupoid G A) (root : G.α) : directed_connected ((¡A) ⊕ (¡A)ᵒᵖ) root :=
+instance free_groupoid_directed_connected {G} [groupoid G] [inhabited G] [preconnected_groupoid G] {A : subquiver ♯G}
+  (hf : is_free_groupoid G A) : directed_connected ((¡A) ⊕ (¡A)ᵒᵖ) :=
+{ nonempty_path := λ a,
 begin 
   let S := (¡A) ⊕ (¡A)ᵒᵖ,
-  have claim : ∀ (a b : G.α), (a ⟶ b) → (nonempty (S.path root a) ↔ nonempty (S.path root b)),
+  have claim : ∀ (a b : G), (a ⟶ b) → (nonempty (S.path (default _) a) ↔ nonempty (S.path (default _) b)),
   { apply free_groupoid_induction,
     { exact hf }, { cc }, { cc }, { cc },
     intros a b p hp,
     split; refine nonempty.map _; intro q,
     { apply quiver.path.cons q (sum.inl ⟨p, hp⟩) },
     { apply quiver.path.cons q (sum.inr ⟨p, hp⟩) }, },
-  intro a, cases preconnected_groupoid.nonempty_hom root a,
-  exact (claim root a val).mp ⟨quiver.path.nil⟩,
-end
+    refine (claim (default _) a _).mp ⟨quiver.path.nil⟩,
+    apply classical.choice, apply_instance,
+end }

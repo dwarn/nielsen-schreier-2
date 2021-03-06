@@ -23,21 +23,22 @@ def functorial.to_functor {C D} [category C] [category D] {ob : C → D}
 
 -- we should be able to generalise universe level with a universe-polymorphic single-obj
 universe u
-variables {G : Groupoid.{u 0}} {A : subquiver ♯G.α}
-  (T : subquiver ((¡A) ⊕ (¡A)ᵒᵖ))
-  {r : G.α}
+variables {G : Type} [groupoid.{u 0} G] {A : subquiver ♯G}
+  (T : subquiver ((¡A) ⊕ (¡A)ᵒᵖ)) [inhabited G]
 
-def path_to_hom : Π {a : G.α}, (¡T).path r a → (r ⟶ a)
+local notation `r` := default G
+
+def path_to_hom : Π {a : G}, (¡T).path r a → (r ⟶ a)
 | _ quiver.path.nil := 𝟙 r
 | _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ f.val
 | _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv f.val
 
-variable [(¡T).is_tree r]
+variable [(¡T).is_tree]
 
-def favourite_hom (a : G.α) : (r ⟶ a) :=
+def favourite_hom (a : G) : (r ⟶ a) :=
 path_to_hom T (quiver.is_tree.favourite _)
 
-def to_End {a b : G.α} (p : a ⟶ b) : End r :=
+def to_End {a b : G} (p : a ⟶ b) : End r :=
 favourite_hom T a ≫ p ≫ inv (favourite_hom T b)
 
 def generators : set (End r) :=
@@ -56,7 +57,7 @@ end
 lemma End_to_End (p : End r) : to_End T p = p :=
 by {rw [to_End, favourite_hom_root], simp }
 
-lemma to_End_eq_id {a b : G.α} {e : (¡A) a b} :
+lemma to_End_eq_id {a b : G} {e : (¡A) a b} :
   (sum.inl e) ∈ T a b ∨ (sum.inr e) ∈ T b a 
     → to_End T e.val = 𝟙 r := 
 begin
@@ -74,8 +75,8 @@ begin
     simp only [is_iso.inv_hom_id, category.comp_id, category.assoc], },
 end
 
-def functor_of_mul_hom {X : Group} (f : (Group.of $ End r) ⟶ X) :
-  @functorial G.α _ (single_obj X) _ (λ _, ()) :=
+def functor_of_mul_hom {X : Group} (f : (End r) →* X) :
+  @functorial G _ (single_obj X) _ (λ _, ()) :=
 { map := λ a b p, f (to_End T p),
   map_id' := begin intro a, convert f.map_one, simp [to_End] end,
   map_comp' := begin
@@ -92,15 +93,15 @@ def functor_of_mul_hom {X : Group} (f : (Group.of $ End r) ⟶ X) :
 -- `(End r ⟶ X) ≃ (G ⥤ single_obj X / natural isos taking value 1 on r)`
 --             `≃ functors G ⥤ single_obj X mapping spanning tree to 1 `
 --             `≃ set functions on complement of spanning tree`.
-theorem contract (hfree : is_free_groupoid G A) : is_free_group ⟨End r⟩ (generators T)
+theorem contract (hfree : is_free_groupoid G A) : is_free_group (End r) (generators T)
  :=
 assume X f,
-let ob : G.α → (single_obj X) := λ _, single_obj.star _ in
+let ob : G → (single_obj X) := λ _, single_obj.star _ in
 let f' : (¡A) →[ob] ♯(single_obj X) := 
   λ a b e, if   h : _ then 𝟙 _
            else f ⟨_, a, b, e, rfl, h⟩ in
 let ⟨F, hF, uF⟩ := hfree (Groupoid.of $ single_obj X) ob f' in
-have F_path_to_hom : Π {a : G.α} {p : (¡T).path r a}, F.map (path_to_hom T p) = 𝟙 _ :=
+have F_path_to_hom : Π {a : G} {p : (¡T).path r a}, F.map (path_to_hom T p) = 𝟙 _ :=
 begin
   intros a p,
   induction p with b c p e ih,

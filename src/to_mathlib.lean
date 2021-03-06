@@ -72,9 +72,12 @@ def iso_hom_equiv {C} [category C] {a b c : C} (h : a ≅ b) : (a ⟶ c) ≃ (b 
   left_inv := by tidy,
   right_inv := by tidy }
 
-def iso_of_mul_equiv {G H : Group} (h : G.α ≃* H.α) : G ≅ H :=
-{ hom := h.to_monoid_hom,
-  inv := h.symm.to_monoid_hom, }
+def homset_equiv_of_mul_equiv {G H K} [group G] [group H] [group K] (h : G ≃* H) :
+  (G →* K) ≃ (H →* K) :=
+{ to_fun := λ g, monoid_hom.comp g h.symm.to_monoid_hom,
+  inv_fun := λ g, monoid_hom.comp g h.to_monoid_hom,
+  left_inv := by tidy,
+  right_inv := by tidy }
 
 lemma stabilizer_of_coset_action {G} [group G] {H : subgroup G} :
   @mul_action.stabilizer G (quotient_group.quotient H) _ _ (quotient_group.mk 1) = H :=

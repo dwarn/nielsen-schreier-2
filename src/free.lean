@@ -6,19 +6,21 @@ open category_theory
 universes u v
 
 -- The property of being the free group on a subset
-def is_free_group (G : Group) (A : set G) : Prop :=
-∀ (X : Group) (f : A → X),
-∃! (F : G ⟶ X), f = F ∘ coe
+-- this definition can be shown to behave well wrt universe levels by
+-- comparing with the explicit construction of the free group (which does not raise universe level)
+def is_free_group (G) [group.{u} G] (A : set G) : Prop :=
+∀ (X : Group.{u}) (f : A → X),
+∃! (F : G →* X), f = F ∘ coe
 
 -- The property of being the free groupoid on a subquiver
-def is_free_groupoid (G : Groupoid.{v u}) (A : subquiver ♯G.α) : Prop :=
-∀ (X : Groupoid.{v u}) (x : G.α → X.α) (f : ¡A →[x] ♯X.α),
+def is_free_groupoid (G) [groupoid.{v u} G] (A : subquiver ♯G) : Prop :=
+∀ (X : Groupoid.{v u}) (x : G → X.α) (f : ¡A →[x] ♯X.α),
 ∃! (F : functorial x), f = (♮F ⊚ sub_hom A) -- todo figure out why we need brackets
 
 -- a group is free iff it is a free groupoid
-lemma free_group_iff_free_groupoid (G : Group) (A : set G) :
+lemma free_group_iff_free_groupoid (G) [group G] (A : set G) :
   is_free_group G A ↔
-  is_free_groupoid (Groupoid.of $ single_obj G.α) ((subquiver_equiv G.α).symm A) :=
+  is_free_groupoid (single_obj G) ((subquiver_equiv G).symm A) :=
 begin
   split,
   { intros hfree X,
@@ -41,14 +43,14 @@ begin
 end
 
 -- a functor out of a free groupoid is determined by its values on the generating subquiver
-lemma free_groupoid_ext {G X : Groupoid.{v u}} {A : subquiver ♯G.α} (hf : is_free_groupoid G A)
-   {x : G.α → X.α} {P Q : functorial x} :
+lemma free_groupoid_ext {G X} [groupoid.{v u} G] [groupoid.{v u} X] {A : subquiver ♯G} (hf : is_free_groupoid G A)
+   {x : G → X} {P Q : functorial x} :
   P = Q ↔ (♮P ⊚ sub_hom A) = (♮Q ⊚ sub_hom A) :=
 begin
   refine ⟨_, _⟩,
   { intro h, rw h },
   intro h,
-  rcases hf X x (♮P ⊚ sub_hom A) with ⟨R, hR, uR⟩,
+  rcases hf ⟨X⟩ x (♮P ⊚ sub_hom A) with ⟨R, hR, uR⟩,
   rw [uR P rfl, uR Q h]
 end
 
@@ -218,18 +220,18 @@ def subquiver_pullback {C} [category C] (F : C ⥤ Type*) (A : subquiver ♯C) :
 -- This lemma corresponds to the fact that any covering space of a graph is
 -- also a graph. In the HoTT formalization of Nielsen-Schreier, it corresponds
 -- to the fact that `coequalizers are stable under pullback'
-lemma elements_is_free_groupoid {G : Groupoid.{u u}} {F : G.α ⥤ Type u} (A : subquiver ♯G.α) (hf : is_free_groupoid G A) :
-  is_free_groupoid (Groupoid.of $ F.elements) (subquiver_pullback F A) :=
+lemma elements_is_free_groupoid {G} [groupoid.{u u} G] {F : G ⥤ Type u} (A : subquiver ♯G) (hf : is_free_groupoid G A) :
+  is_free_groupoid F.elements (subquiver_pullback F A) :=
 begin
   intros X x,
   let Y := (name_this_todo x).total,
   intro f,
-  set ob : G.α → Y.α := λ x, ⟨x, ()⟩,
+  set ob : G → Y.α := λ x, ⟨x, ()⟩,
   set f' : (¡A →[ob] ♯Y.α) := λ a b p, ⟨p.val, λ s t h,
     @f ⟨_,_⟩ ⟨_,_⟩ ⟨⟨p.val, h.symm⟩, p.property⟩⟩,
   have sane : ∀ P : functorial ob,
     f' = (♮P ⊚ sub_hom A) → 
-      ∃ ma : Π {c d : G.α} (p : c ⟶ d), (name_this_todo x).mor p () (),
+      ∃ ma : Π {c d : G} (p : c ⟶ d), (name_this_todo x).mor p () (),
         P.map = λ c d p, ⟨p, ma p⟩,
   { intros P hP,
     apply strictify_map,
@@ -239,10 +241,10 @@ begin
     rw ←hP },
   rcases hf Y ob f' with ⟨P, hP, uP⟩,
   rcases sane P hP with ⟨ma, hma⟩,
-  have sane' : ∀ {c d : G.α} (p : c ⟶ d), ma p == (P.map p).snd,
+  have sane' : ∀ {c d : G} (p : c ⟶ d), ma p == (P.map p).snd,
   { intros, rw hma, },
-  suffices : ∃! y : disp_functor (𝟭 G.α) (terminal_disp G.α) (todo_name_this x),
-    ∀ {c d : G.α} (p : c ⟶ d) (hp : p ∈ A c d), (f' ⟨p, hp⟩).snd = y.map (),
+  suffices : ∃! y : disp_functor (𝟭 G) (terminal_disp G) (todo_name_this x),
+    ∀ {c d : G} (p : c ⟶ d) (hp : p ∈ A c d), (f' ⟨p, hp⟩).snd = y.map (),
   { rw (todo_equiv x).exists_unique_congr,
     { exact this },
     intro z,
@@ -255,7 +257,7 @@ begin
       specialize hyp p hp,
       change (f' ⟨p, hp⟩).snd s t h.symm = _, 
       rw hyp, refl, }, },
-  { set y : disp_functor (𝟭 G.α) (terminal_disp G.α) (todo_name_this x) :=
+  { set y : disp_functor (𝟭 G) (terminal_disp G) (todo_name_this x) :=
     { obj := λ _ _, (),
       map := λ a b p a' b' p', ma p,
       map_id := λ a _, calc ma (𝟙 a) == (P.map $ 𝟙 a).snd : sane' _
@@ -311,14 +313,14 @@ begin
   },
 end
 
-lemma free_groupoid_induction {G : Groupoid} {A : subquiver ♯G.α} {hf : is_free_groupoid G A}
-  {P : Π {a b : G.α}, (a ⟶ b) → Prop}
+lemma free_groupoid_induction {G} [groupoid G] {A : subquiver ♯G} {hf : is_free_groupoid G A}
+  {P : Π {a b : G}, (a ⟶ b) → Prop}
     (h_id : ∀ a, P (𝟙 a))
     (h_comp : ∀ {a b c} {f : a ⟶ b} {g : b ⟶ c}, P f → P g → P (f ≫ g))
     (h_inv : ∀ {a b} {f : a ⟶ b}, P f → P (inv f))
     (h_base : ∀ {a b} (f ∈ A a b), P f)
     : ∀ a b (f : a ⟶ b), P f :=
-let subgpd : disp_groupoid G.α :=
+let subgpd : disp_groupoid G :=
 { obj := λ _ , unit,
   mor := λ _ _ p _ _, plift (P p),
   id := λ a _, plift.up (h_id _),
@@ -346,7 +348,7 @@ begin
 end
 
 -- being a free group is an isomorphism invariant
-lemma is_free_group_mul_equiv {G H : Group.{u}} (A : set G) (h : G ≃* H) :
+lemma is_free_group_mul_equiv {G H : Type u} [group G] [group H] (A : set G) (h : G ≃* H) :
   is_free_group G A ↔ is_free_group H (equiv.set.congr h.to_equiv A) :=
 begin
   apply forall_congr,
@@ -354,25 +356,24 @@ begin
   set hh := (equiv.Pi_congr_left' _ $ equiv.set.congr.equiv h.to_equiv A),
   apply equiv.forall_congr hh,
   intro f,
-  apply equiv.exists_unique_congr (iso_hom_equiv (iso_of_mul_equiv h)),
+  apply equiv.exists_unique_congr (homset_equiv_of_mul_equiv _),
   intro F,
   convert hh.apply_eq_iff_eq_symm_apply.symm,
   rw ←hh.apply_eq_iff_eq_symm_apply,
   refl,
 end
 
-lemma End_mul_equiv_subgroup {G : Group} (H : subgroup G) : 
-  @End (action_category G (quotient_group.quotient H)) _ 
-        ⟨single_obj.star G, quotient_group.mk 1⟩ ≃* H := 
+instance action_category_inhabited {M X} [monoid M] [mul_action M X] [inhabited X] :
+  inhabited (action_category M X) := ⟨⟨single_obj.star M, (default _ : X)⟩⟩
+
+def End_mul_equiv_subgroup {G} [group G] (H : subgroup G) : 
+  End (default (action_category G $ quotient_group.quotient H)) ≃* H := 
 begin
   refine mul_equiv.trans _ _,
   { exact @mul_action.stabilizer G (quotient_group.quotient H) _  _ (quotient_group.mk 1) },
   { apply_instance },
-  { apply mul_equiv.refl },
+  { apply mul_equiv.refl }, -- this is a heavy refl
   { rw stabilizer_of_coset_action },
 end
-
---theorem aut_is_free {G : Groupoid} {A : subquiver ♯G.α} {h : is_free_groupoid G A}
-  --(a : G.α) : ∃ B : set (Aut a), is_free_group ⟨Aut a⟩ B := sorry
 
 end covering_map

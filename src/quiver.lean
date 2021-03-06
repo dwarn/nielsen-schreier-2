@@ -49,9 +49,9 @@ inductive path {G : Type u} (p : quiver.{v} G) (a : G) : G → Type (max u v)
 | nil  : path a
 | cons : Π {b c : G}, path b → p b c → path c
 
-class is_tree {G : Type u} (p : quiver G) (a : G) :=
-(favourite : Π (b : G), p.path a b)
-(is_favourite : Π {b : G} (q : p.path a b), q = favourite b)
+class is_tree {G : Type u} [inhabited G] (p : quiver G) :=
+(favourite : Π (b : G), p.path (default _) b)
+(is_favourite : ∀ {b : G} q, q = favourite b)
 
 end quiver
 
