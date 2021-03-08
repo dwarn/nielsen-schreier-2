@@ -35,16 +35,26 @@ notation `¡` p := quiver_of_sub p
 
 namespace quiver
 
+@[ext]
+structure total {G} (q : quiver G) :=
+(source : G)
+(target : G)
+(edge : q source target)
+
 inductive path {G} (p : quiver.{u v} G) (a : G) : G → Type (max u v)
 | nil  : path a
 | cons : Π {b c : G}, path b → p b c → path c
+
+end quiver
 
 class is_tree {G} [inhabited G] (p : quiver G) :=
 (unique_path (b : G) : unique (p.path (default G) b))
 
 attribute [instance] is_tree.unique_path
 
-end quiver
-
 def symmy {G} (p : quiver G) : quiver G :=
 λ a b, (p a b) ⊕ (p b a)
+
+def tree_symmy {G} [inhabited G] {p : quiver.{v u} G} (t : subquiver (symmy p)) [is_tree ¡t] :
+  set p.total :=
+{ tp | sum.inl tp.edge ∈ t tp.source tp.target ∨ sum.inr tp.edge ∈ t tp.target tp.source }

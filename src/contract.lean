@@ -6,8 +6,8 @@ open_locale classical
 
 open category_theory is_free_groupoid
 
-universe u
-variables {G : Type} [groupoid.{u 0} G] [is_free_groupoid G] [inhabited G]
+universe v
+variables {G : Type} [groupoid.{v 0} G] [is_free_groupoid G] [inhabited G]
   (T : subquiver (symmy gpd_gens : quiver G))
 
 def path_to_hom : Π {a : G}, (¡T).path (default G) a → ((default G) ⟶ a)
@@ -15,7 +15,7 @@ def path_to_hom : Π {a : G}, (¡T).path (default G) a → ((default G) ⟶ a)
 | _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ (gpd_emb f)
 | _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv (gpd_emb f)
 
-variable [(¡T).is_tree]
+variable [is_tree ¡T]
 
 def favourite_hom (a : G) : (default G ⟶ a) :=
 path_to_hom T (default _)
@@ -70,15 +70,14 @@ def functorial_of_mul_hom {X} [group X] (f : (End (default G)) →* X) :
 --             `≃ functors G ⥤ single_obj X mapping spanning tree to 1 `
 --             `≃ set functions on complement of spanning tree`.
 def contract : is_free_group (End (default G)) :=
-{ gp_gens := Σ (a b : G),
-              { p : gpd_gens a b // ¬ (sum.inl p ∈ T a b ∨ sum.inr p ∈ T b a ) },
-  gp_emb := λ tp, to_End T (gpd_emb tp.snd.snd.val),
+{ gp_gens := set.compl (tree_symmy T),
+  gp_emb := λ tp, to_End T (gpd_emb tp.val.edge),
   gp_lift := begin
     introsI X _ f,
     let f' : quiver_hom gpd_gens ♯(single_obj X) := 
     { obj := λ _, (),
-      edge := λ a b e, if   h : _ then 𝟙 _
-                      else f ⟨a, b, e, h⟩ },
+      edge := λ a b e, if h : (sum.inl e ∈ T a b ∨ sum.inr e ∈ T b a) then 𝟙 _
+                       else f ⟨⟨a, b, e⟩, h⟩ },
     rcases gpd_lift f' with ⟨F, hF, uF⟩,
     resetI,
     have map_eq_map' : ∀ {a b : G} (p : a ⟶ b), map f'.obj p = F.map' p := λ _ _ _, rfl,
@@ -112,8 +111,9 @@ def contract : is_free_group (End (default G)) :=
     { intro tp,
       change f _ = (functorial_of_mul_hom T ghom).map' _,
       rw [sane, ←hF], change f _ = dite _ _ _,
-      rw dif_neg tp.snd.snd.property,
-      rcases tp with ⟨_, _, _, _⟩, refl },
+      rw dif_neg,
+      { apply congr_arg, ext; refl },
+      exact tp.property },
     { intros z zh,
       have : functorial_of_mul_hom T z = F,
       { apply uF, intros a b e,
@@ -124,5 +124,5 @@ def contract : is_free_group (End (default G)) :=
       ext,
       have : (functorial_of_mul_hom T z).map' x = (functorial_of_mul_hom T ghom).map' x,
       { rw [this, sane] },
-      convert this; rw End_to_End }    
+      convert this; rw End_to_End },
   end }

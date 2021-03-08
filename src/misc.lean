@@ -2,6 +2,7 @@ import category_theory.single_obj
        category_theory.functorial
        category_theory.action
 
+open_locale classical
 open category_theory function quotient_group
 universes v v₁ v₂ u u₁ u₂
 
@@ -85,3 +86,20 @@ begin
   rw [is_iso.eq_inv_comp, ←functorial.map_comp],
   simp only [functorial.map_id, is_iso.hom_inv_id],
 end
+
+noncomputable def compl_sum_set_equiv {A} (s : set A) : (set.compl s) ⊕ s ≃ A :=
+{ to_fun := λ x, sum.rec_on x coe coe,
+  inv_fun := λ a, if h : a ∈ s
+                  then sum.inr ⟨a, h⟩
+                  else sum.inl ⟨a, h⟩,
+  left_inv := begin
+    intro x,
+    rcases x with ⟨x, h⟩ | ⟨x, h⟩,
+    { dsimp, rw dif_neg },
+    { dsimp, rw dif_pos }
+  end,
+  right_inv := begin
+    intro y, by_cases y ∈ s,
+    { dsimp, rw dif_pos, { refl }, exact h }, 
+    { dsimp, rw dif_neg, { refl }, exact h }, 
+  end }
