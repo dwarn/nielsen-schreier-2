@@ -3,7 +3,7 @@ import category_theory.single_obj
 
 open category_theory
 
-universes u v
+universes v u
 
 def quiver (G : Type u) := G → G → Type v
 

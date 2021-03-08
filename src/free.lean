@@ -14,7 +14,7 @@ class is_free_group (G) [group.{u} G] :=
 (gp_lift {X} [group.{u} X] (f : gp_gens → X) : ∃! F : G →* X, ∀ a, f a = F (gp_emb a))
 
 class is_free_groupoid (G) [groupoid.{v u} G] :=
-(gpd_gens : quiver G)
+(gpd_gens : quiver.{v u} G)
 (gpd_emb : qhom_over_id gpd_gens ♯G)
 (gpd_lift {X} [groupoid.{v u} X] (f : quiver_hom gpd_gens ♯X) :
   ∃! F : functorial f.obj, ∀ {x y : G} (a : gpd_gens x y), f.edge a = F.map' (gpd_emb a))

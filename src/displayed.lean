@@ -40,6 +40,12 @@ instance total_displayed {C} [category C] (D : disp_cat C) : category D.total :=
   comp_id' := by { intros, apply sigma.ext, apply category.comp_id', apply D.comp_id },
   assoc'   := by { intros, apply sigma.ext, apply category.assoc, apply D.assoc } }
 
+lemma total_id {C} [category C] {D : disp_cat C} (x : D.total) :
+  𝟙 x = ⟨𝟙 x.fst, D.id x.snd⟩ := rfl
+
+lemma total_comp {C} [category C] {D : disp_cat C} {x y z : D.total} (f : x ⟶ y) (g : y ⟶ z) :
+  f ≫ g = ⟨f.fst ≫ g.fst, D.comp f.snd g.snd⟩ := rfl
+
 @[derive category]
 def disp_groupoid.total {C} [groupoid C] (D : disp_groupoid C) := D.to_disp_cat.total
 
@@ -73,24 +79,3 @@ def terminal_obj (C) [category C] : C → (terminal_disp C).total := λ c, ⟨c,
 
 instance terminal_functorial (C) [category C] : functorial (terminal_obj C) :=
 { map := λ a b f, ⟨f, ()⟩ }
-
-/-
--- given a section of the projection functor which is strict on objects,
--- make it strict also on morphisms
-lemma strictify_map {C} [category C] {D : disp_cat C}
-  {ob : Π c : C, D.obj c} {f : functorial (terminal_obj C)}
-  (h : functorial_comp f D.π = functorial_id C) :
-    ∃ (ma : Π {c d : C} (p : c ⟶ d), D.mor p (ob c) (ob d)),
-      f.map = (λ c d p, ⟨p, ma p⟩) :=
-begin
-  refine ⟨_, _⟩,
-  { intros c d p,
-    convert (f.map p).snd,
-    change p = (functorial_comp f $ disp_cat.π D).map p,
-    rw h, refl },
-  funext,
-  apply sigma.ext,
-  { change (functorial_comp f $ disp_cat.π D).map x_2 = x_2,
-    rw h, refl },
-  symmetry, simp, --??
-end-/
