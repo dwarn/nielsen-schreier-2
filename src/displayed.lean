@@ -1,4 +1,5 @@
-import category_theory.category.Cat category_theory.category.Groupoid to_mathlib
+import category_theory.groupoid
+       to_mathlib
 
 -- this file contains the construction of displayed categories
 -- see https://arxiv.org/pdf/1705.04296.pdf
@@ -6,8 +7,8 @@ import category_theory.category.Cat category_theory.category.Groupoid to_mathlib
 open category_theory
 
 structure disp_cat (C) [category C] :=
-(obj  : C → Sort*) 
-(mor  : Π {a b : C}, (a ⟶ b) → obj a → obj b → Sort*)
+(obj  : C → Type*)  -- ideally these could be Sort*
+(mor  : Π {a b : C}, (a ⟶ b) → obj a → obj b → Type*)
 (id   : Π {a : C} (x : obj a), mor (𝟙 a) x x)
 (comp : Π {a b c : C} {f : a ⟶ b} {g : b ⟶ c}
         {x : obj a} {y : obj b} {z : obj c},
@@ -29,20 +30,23 @@ structure disp_groupoid (G) [groupoid G] extends disp_cat G :=
   comp F (inv F) == id x . obviously)
 
 -- a displayed category is also a genuine category
-def disp_cat.total {C} [category C] (D : disp_cat C) : Cat :=
-{ α := Σ c : C, D.obj c,
-  str := { hom      := λ x y, Σ f : x.fst ⟶ y.fst, D.mor f x.snd y.snd,
-           id       := λ x, ⟨𝟙 x.fst, D.id x.snd⟩,
-           comp     := λ x y z F G, ⟨F.fst ≫ G.fst, D.comp F.snd G.snd⟩,
-           id_comp' := by { intros, apply sigma.ext, apply category.id_comp, apply D.id_comp },
-           comp_id' := by { intros, apply sigma.ext, apply category.comp_id', apply D.comp_id },
-           assoc'   := by { intros, apply sigma.ext, apply category.assoc, apply D.assoc } } }
+def disp_cat.total {C} [category C] (D : disp_cat C) := Σ c : C, D.obj c
 
-def disp_groupoid.total {G} [groupoid G] (D : disp_groupoid G) : Groupoid :=
-{ α := D.to_disp_cat.total.α,
-  str := { inv       := λ x y F, ⟨inv F.fst, D.inv F.snd⟩,
-           inv_comp' := by { intros, apply sigma.ext, apply groupoid.inv_comp, apply D.inv_comp },
-           comp_inv' := by { intros, apply sigma.ext, apply groupoid.comp_inv, apply D.comp_inv }, } }
+instance total_displayed {C} [category C] (D : disp_cat C) : category D.total :=
+{ hom      := λ x y, Σ f : x.fst ⟶ y.fst, D.mor f x.snd y.snd,
+  id       := λ x, ⟨𝟙 x.fst, D.id x.snd⟩,
+  comp     := λ x y z F G, ⟨F.fst ≫ G.fst, D.comp F.snd G.snd⟩,
+  id_comp' := by { intros, apply sigma.ext, apply category.id_comp, apply D.id_comp },
+  comp_id' := by { intros, apply sigma.ext, apply category.comp_id', apply D.comp_id },
+  assoc'   := by { intros, apply sigma.ext, apply category.assoc, apply D.assoc } }
+
+@[derive category]
+def disp_groupoid.total {C} [groupoid C] (D : disp_groupoid C) := D.to_disp_cat.total
+
+instance {C} [groupoid C] (D : disp_groupoid C) : groupoid D.total :=
+{ inv := λ x y F, ⟨inv F.fst, D.inv F.snd⟩,
+  inv_comp' := by { intros, apply sigma.ext, apply groupoid.inv_comp, apply D.inv_comp },
+  comp_inv' := by { intros, apply sigma.ext, apply groupoid.comp_inv, apply D.comp_inv } }
 
 @[ext]
 structure disp_functor {C D} [category C] [category D]
@@ -54,8 +58,9 @@ structure disp_functor {C D} [category C] [category D]
               (F : C'.mor f x y) (G : C'.mor g y z),
                 map (C'.comp F G) == D'.comp (map F) (map G))
 
-def disp_cat.π {C} [category C] (D : disp_cat C) :
-  functorial (λ x : D.total, x.fst) :=
+def disp_cat.π {C} [category C] (D : disp_cat C) : D.total → C := sigma.fst
+
+instance {C} [category C] (D : disp_cat C) : functorial D.π :=
 { map := λ _ _, sigma.fst }
 
 def terminal_disp (C) [category C] : disp_cat C :=
@@ -64,13 +69,16 @@ def terminal_disp (C) [category C] : disp_cat C :=
   id   := λ _ _, (),
   comp := λ _ _ _ _ _ _ _ _ _ _, () }
 
-def terminal_functorial (C) [category C] : @functorial C _ _ (terminal_disp C).total.str (λ c, ⟨c, ()⟩) :=
+def terminal_obj (C) [category C] : C → (terminal_disp C).total := λ c, ⟨c, ()⟩
+
+instance terminal_functorial (C) [category C] : functorial (terminal_obj C) :=
 { map := λ a b f, ⟨f, ()⟩ }
 
+/-
 -- given a section of the projection functor which is strict on objects,
 -- make it strict also on morphisms
 lemma strictify_map {C} [category C] {D : disp_cat C}
-  {ob : Π c : C, D.obj c} {f : @functorial C _ _ D.total.str (λ c, ⟨c, ob c⟩)}
+  {ob : Π c : C, D.obj c} {f : functorial (terminal_obj C)}
   (h : functorial_comp f D.π = functorial_id C) :
     ∃ (ma : Π {c d : C} (p : c ⟶ d), D.mor p (ob c) (ob d)),
       f.map = (λ c d p, ⟨p, ma p⟩) :=
@@ -85,4 +93,4 @@ begin
   { change (functorial_comp f $ disp_cat.π D).map x_2 = x_2,
     rw h, refl },
   symmetry, simp, --??
-end
+end-/

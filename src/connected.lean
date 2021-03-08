@@ -1,11 +1,10 @@
 import group_theory.group_action 
        category_theory.groupoid
        category_theory.action
-       category_theory.category.Groupoid
        quiver
        free
 
-open category_theory
+open category_theory is_free_groupoid
 
 -- a pretransitive action is allowed to be empty
 class pretransitive (G X) [group G] [mul_action G X] :=
@@ -36,18 +35,19 @@ attribute [instance] preconnected_groupoid.nonempty_hom
 attribute [instance] directed_connected.nonempty_path
 
 -- a free groupoid is preconnected only if the underlying graph is connected, ish
-instance free_groupoid_directed_connected {G} [groupoid G] [inhabited G] [preconnected_groupoid G] {A : subquiver ♯G}
-  (hf : is_free_groupoid G A) : directed_connected ((¡A) ⊕ (¡A)ᵒᵖ) :=
+instance free_groupoid_directed_connected
+  {G} [groupoid G] [inhabited G] [preconnected_groupoid G] [is_free_groupoid G] :
+  directed_connected (symmy gpd_gens : quiver G) :=
 { nonempty_path := λ a,
 begin 
-  let S := (¡A) ⊕ (¡A)ᵒᵖ,
-  have claim : ∀ (a b : G), (a ⟶ b) → (nonempty (S.path (default _) a) ↔ nonempty (S.path (default _) b)),
+  have claim : ∀ (a b : G), (a ⟶ b) →
+    (nonempty ((symmy gpd_gens).path (default _) a) ↔
+     nonempty ((symmy gpd_gens).path (default _) b)),
   { apply free_groupoid_induction,
-    { exact hf }, { cc }, { cc }, { cc },
-    intros a b p hp,
-    split; refine nonempty.map _; intro q,
-    { apply quiver.path.cons q (sum.inl ⟨p, hp⟩) },
-    { apply quiver.path.cons q (sum.inr ⟨p, hp⟩) }, },
-    refine (claim (default _) a _).mp ⟨quiver.path.nil⟩,
-    apply classical.choice, apply_instance,
+    { cc }, { cc }, { cc },
+    intros a b p, split; refine nonempty.map _; intro q,
+    { apply q.cons (sum.inl p) },
+    { apply q.cons (sum.inr p) }, },
+  refine (claim (default _) a _).mp ⟨quiver.path.nil⟩,
+  apply classical.choice, apply_instance,
 end }
