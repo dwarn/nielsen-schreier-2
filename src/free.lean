@@ -1,8 +1,9 @@
 import category_theory.single_obj
        category_theory.functor
-       category_theory.elements quiver
+       category_theory.elements
        category_theory.action
-       to_mathlib
+       quiver
+       misc
        displayed
 open category_theory
 

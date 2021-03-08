@@ -87,5 +87,6 @@ begin -- todo: write this idiomatically
 end
 
 instance geodesic_tree : (¡geodesic_subgraph G).is_tree :=
-{ favourite := λ b, geodesic_path G _ b (le_refl _),
-  is_favourite := λ b q, paths_are_unique G }
+{ unique_path := λ b,
+  { default := geodesic_path G _ b (le_refl _),
+    uniq := λ _, paths_are_unique G } }

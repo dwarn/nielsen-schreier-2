@@ -75,3 +75,13 @@ begin
   { apply mul_equiv.refl }, -- this is a heavy refl
   { rw stabilizer_of_coset_action },
 end
+
+lemma functorial.map_inv {C D} [groupoid C] [groupoid D] {ob : C → D}
+  [functorial ob] (a b : C) (p : a ⟶ b) :
+    map ob (inv p) = inv (map ob p) :=
+begin
+  suffices : map ob (inv p) = inv (map ob p) ≫ (𝟙 _),
+  { simp only [this, category.comp_id]},
+  rw [is_iso.eq_inv_comp, ←functorial.map_comp],
+  simp only [functorial.map_id, is_iso.hom_inv_id],
+end

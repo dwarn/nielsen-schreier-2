@@ -168,7 +168,7 @@ universe u
 -- This lemma corresponds to the fact that any covering space of a graph is
 -- also a graph. In the HoTT formalization of Nielsen-Schreier, it corresponds
 -- to the fact that `coequalizers are stable under pullback'
-lemma elements_is_free_groupoid {G} [groupoid.{u u} G] {F : G ⥤ Type u} [is_free_groupoid G] :
+instance elements_is_free_groupoid {G} [groupoid.{u u} G] {F : G ⥤ Type u} [is_free_groupoid G] :
   is_free_groupoid F.elements :=
 { gpd_gens := λ x y, { a : gpd_gens x.fst y.fst // F.map (gpd_emb a) x.snd = y.snd },
   gpd_emb := λ x y a, ⟨gpd_emb a, a.property⟩,
@@ -244,3 +244,6 @@ lemma elements_is_free_groupoid {G} [groupoid.{u u} G] {F : G ⥤ Type u} [is_fr
     apply hz,
   end
 }
+
+instance action_category_is_free_groupoid {G X} [group G] [mul_action G X] [is_free_group G] :
+  is_free_groupoid (action_category G X) := elements_is_free_groupoid

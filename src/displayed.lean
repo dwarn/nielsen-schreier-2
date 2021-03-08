@@ -1,5 +1,5 @@
 import category_theory.groupoid
-       to_mathlib
+       misc
 
 -- this file contains the construction of displayed categories
 -- see https://arxiv.org/pdf/1705.04296.pdf

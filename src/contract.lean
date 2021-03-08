@@ -1,82 +1,58 @@
-import free quiver
+import free
+       quiver
+       misc
 
 open_locale classical
 
-open category_theory
+open category_theory is_free_groupoid
 
-lemma functorial.map_inv {C D} [groupoid C] [groupoid D] {ob : C → D}
-  (f : functorial ob) (a b : C) (p : a ⟶ b) :
-    f.map (inv p) = inv (f.map p) :=
-begin
-  suffices : f.map (inv p) = inv (f.map p) ≫ (𝟙 _),
-  { simp only [this, category.comp_id]},
-  rw [is_iso.eq_inv_comp, ←f.map_comp'],
-  simp only [f.map_id', is_iso.hom_inv_id],
-end
-
-def functorial.to_functor {C D} [category C] [category D] {ob : C → D}
-  (f : functorial ob) : C ⥤ D :=
-{ obj := ob,
-  map := f.map,
-  map_id' := λ a, f.map_id' _,
-  map_comp' := λ _ _ _ _ _, f.map_comp' _ _ }
-
--- we should be able to generalise universe level with a universe-polymorphic single-obj
 universe u
-variables {G : Type} [groupoid.{u 0} G] {A : subquiver ♯G}
-  (T : subquiver ((¡A) ⊕ (¡A)ᵒᵖ)) [inhabited G]
+variables {G : Type} [groupoid.{u 0} G] [is_free_groupoid G] [inhabited G]
+  (T : subquiver (symmy gpd_gens : quiver G))
 
-local notation `r` := default G
-
-def path_to_hom : Π {a : G}, (¡T).path r a → (r ⟶ a)
-| _ quiver.path.nil := 𝟙 r
-| _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ f.val
-| _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv f.val
+def path_to_hom : Π {a : G}, (¡T).path (default G) a → ((default G) ⟶ a)
+| _ quiver.path.nil := 𝟙 _
+| _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ (gpd_emb f)
+| _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv (gpd_emb f)
 
 variable [(¡T).is_tree]
 
-def favourite_hom (a : G) : (r ⟶ a) :=
-path_to_hom T (quiver.is_tree.favourite _)
+def favourite_hom (a : G) : (default G ⟶ a) :=
+path_to_hom T (default _)
 
-def to_End {a b : G} (p : a ⟶ b) : End r :=
+def to_End {a b : G} (p : a ⟶ b) : End (default G) :=
 favourite_hom T a ≫ p ≫ inv (favourite_hom T b)
 
-def generators : set (End r) :=
-{ x | ∃ a b (e : A a b), 
-  x = to_End T e.val
-  ∧ ¬ ( (sum.inl e) ∈ T a b ∨ (sum.inr e) ∈ T b a) }
-
-lemma favourite_hom_root : favourite_hom T r = 𝟙 r :=
+lemma favourite_hom_root : favourite_hom T (default G) = 𝟙 _ :=
 begin
   change path_to_hom T _ = _,
-  have : quiver.is_tree.favourite r = quiver.path.nil,
-  { symmetry, apply quiver.is_tree.is_favourite },
+  have : default ((¡T).path (default G) _) = quiver.path.nil,
+  { apply unique.default_eq },
   rw this, refl,
 end
 
-lemma End_to_End (p : End r) : to_End T p = p :=
+lemma End_to_End (p : End (default G)) : to_End T p = p :=
 by {rw [to_End, favourite_hom_root], simp }
 
-lemma to_End_eq_id {a b : G} {e : (¡A) a b} :
+lemma to_End_eq_id {a b : G} {e : gpd_gens a b} :
   (sum.inl e) ∈ T a b ∨ (sum.inr e) ∈ T b a 
-    → to_End T e.val = 𝟙 r := 
+    → to_End T (gpd_emb e) = 𝟙 _ := 
 begin
   rw [to_End, ←category.assoc, is_iso.comp_inv_eq, category.id_comp,
     favourite_hom, favourite_hom],
   rintro (h | h),
-  { set to_b : (¡T).path r b :=
-      quiver.path.cons (quiver.is_tree.favourite _) ⟨sum.inl e, h⟩,
-    have : to_b = _ := quiver.is_tree.is_favourite _,
-    rw ←this, refl },
-  { set to_a : (¡T).path r a :=
-      quiver.path.cons (quiver.is_tree.favourite _) ⟨sum.inr e, h⟩,
-    have : to_a = _ := quiver.is_tree.is_favourite _,
-    rw [←this, path_to_hom],
-    simp only [is_iso.inv_hom_id, category.comp_id, category.assoc], },
+  { set to_b : (¡T).path (default G) b :=
+      quiver.path.cons (default _) ⟨sum.inl e, h⟩,
+    have : default _ = to_b := unique.default_eq _,
+    rw this, refl },
+  { set to_a : (¡T).path (default G) a :=
+      quiver.path.cons (default _) ⟨sum.inr e, h⟩,
+    have : default _ = to_a := unique.default_eq _,
+    simp only [this, path_to_hom, is_iso.inv_hom_id, category.comp_id, category.assoc] },
 end
 
-def functor_of_mul_hom {X : Group} (f : (End r) →* X) :
-  @functorial G _ (single_obj X) _ (λ _, ()) :=
+def functorial_of_mul_hom {X} [group X] (f : (End (default G)) →* X) :
+  functorial (λ (g : G), single_obj.star X) :=
 { map := λ a b p, f (to_End T p),
   map_id' := begin intro a, convert f.map_one, simp [to_End] end,
   map_comp' := begin
@@ -93,62 +69,60 @@ def functor_of_mul_hom {X : Group} (f : (End r) →* X) :
 -- `(End r ⟶ X) ≃ (G ⥤ single_obj X / natural isos taking value 1 on r)`
 --             `≃ functors G ⥤ single_obj X mapping spanning tree to 1 `
 --             `≃ set functions on complement of spanning tree`.
-theorem contract (hfree : is_free_groupoid G A) : is_free_group (End r) (generators T)
- :=
-assume X f,
-let ob : G → (single_obj X) := λ _, single_obj.star _ in
-let f' : (¡A) →[ob] ♯(single_obj X) := 
-  λ a b e, if   h : _ then 𝟙 _
-           else f ⟨_, a, b, e, rfl, h⟩ in
-let ⟨F, hF, uF⟩ := hfree (Groupoid.of $ single_obj X) ob f' in
-have F_path_to_hom : Π {a : G} {p : (¡T).path r a}, F.map (path_to_hom T p) = 𝟙 _ :=
-begin
-  intros a p,
-  induction p with b c p e ih,
-  { apply F.map_id' },
-  rcases e with ⟨e, eT⟩,
-  rcases e with ⟨e, eA⟩ | ⟨e, eA⟩,
-  { change F.map (_ ≫ _) = _,
-    rw [F.map_comp', ih],
-    change (𝟙 _) ≫ (♮F ⊚ sub_hom A) _ = _,
-    rw ←hF,
-    change (𝟙 _) ≫ dite _ _ _ = _,
-    rw dif_pos (or.inl eT),
-    simp only [category.comp_id]},
-  { change F.map (_ ≫ inv _) = _,
-    rw [F.map_comp', ih, F.map_inv],
-    suffices : F.map e = 𝟙 _,
-    { simp only [this, is_iso.comp_inv_eq, category.comp_id]},
-    change (♮F ⊚ sub_hom A) ⟨e, eA⟩ = _,
-    rw ←hF,
-    change dite _ _ _ = _,
-    rw dif_pos (or.inr eT) }
-end,
-let ghom : (End r) →* X := functor.map_End r F.to_functor in
-have sane : functor_of_mul_hom T ghom = F := begin
-  ext,
-  change F.map (path_to_hom T _ ≫ _ ≫ inv (path_to_hom _ _)) = F.map _,
-  rw [F.map_comp', F.map_comp', functorial.map_inv, F_path_to_hom, F_path_to_hom],
-  simp only [is_iso.comp_inv_eq, category.id_comp, category.comp_id],
-end,
-⟨ghom,
-begin
-  funext, rcases x with ⟨_, a, b, p, ⟨⟩, nn⟩,
-  change f _ = (functor_of_mul_hom T ghom).map _,
-  rw sane, change f _ = (♮F ⊚ sub_hom A) _,
-  rw ←hF, change f _ = dite _ _ _,
-  rw dif_neg nn, refl,
-end,
-begin
-  intros z zh, ext,
-  have : functor_of_mul_hom T z = F,
-  { apply uF, ext,
-    change dite _ _ _ = z (to_End T x_3.val),
-    by_cases (sum.inl x_3) ∈ T _ _ ∨ (sum.inr x_3) ∈ T _ _,
-    { rw [dif_pos h, to_End_eq_id T h],
-      change _ = z 1, rw z.map_one, refl },
-    { rw [dif_neg h, zh], refl } },
-  have : (functor_of_mul_hom T z).map x = (functor_of_mul_hom T ghom).map x,
-  { rw [this, sane] },
-  convert this; rw End_to_End
-end⟩
+def contract : is_free_group (End (default G)) :=
+{ gp_gens := Σ (a b : G),
+              { p : gpd_gens a b // ¬ (sum.inl p ∈ T a b ∨ sum.inr p ∈ T b a ) },
+  gp_emb := λ tp, to_End T (gpd_emb tp.snd.snd.val),
+  gp_lift := begin
+    introsI X _ f,
+    let f' : quiver_hom gpd_gens ♯(single_obj X) := 
+    { obj := λ _, (),
+      edge := λ a b e, if   h : _ then 𝟙 _
+                      else f ⟨a, b, e, h⟩ },
+    rcases gpd_lift f' with ⟨F, hF, uF⟩,
+    resetI,
+    have map_eq_map' : ∀ {a b : G} (p : a ⟶ b), map f'.obj p = F.map' p := λ _ _ _, rfl,
+    have F_path_to_hom : ∀ {a : G} {p : (¡T).path (default G) a},
+      map f'.obj (path_to_hom T p) = 𝟙 _,
+    { intros a p,
+      induction p with b c p e ih,
+      { apply functorial.map_id },
+      rcases e with ⟨e, eT⟩,
+      rcases e with e | e,
+      { change map f'.obj (_ ≫ _ ) = _,
+        rw [functorial.map_comp, ih, map_eq_map', ←hF],
+        change _ ≫ dite _ _ _ = _,
+        rw dif_pos (or.inl eT),
+        apply category.comp_id },
+      { change map f'.obj (_ ≫ inv _) = _,
+        rw [functorial.map_comp, ih, functorial.map_inv],
+        suffices : map f'.obj (gpd_emb e) = 𝟙 _,
+        { simp only [this, is_iso.comp_inv_eq, category.comp_id] },
+        rw [map_eq_map', ←hF],
+        change dite _ _ _ = _,
+        rw dif_pos (or.inr eT) } },
+    let ghom : (End (default G)) →* X := functor.map_End (default G) (functor.of f'.obj),
+    have sane : functorial_of_mul_hom T ghom = F,
+    { rw functorial_ext, intros,
+      change map f'.obj ((path_to_hom T _) ≫ _ ≫ inv (path_to_hom T _)) = _,
+      rw [functorial.map_comp, functorial.map_comp, functorial.map_inv, 
+          F_path_to_hom, F_path_to_hom, map_eq_map'],
+      simp only [is_iso.comp_inv_eq, category.id_comp, category.comp_id] },
+    refine ⟨ghom, _, _⟩,
+    { intro tp,
+      change f _ = (functorial_of_mul_hom T ghom).map' _,
+      rw [sane, ←hF], change f _ = dite _ _ _,
+      rw dif_neg tp.snd.snd.property,
+      rcases tp with ⟨_, _, _, _⟩, refl },
+    { intros z zh,
+      have : functorial_of_mul_hom T z = F,
+      { apply uF, intros a b e,
+        change dite _ _ _ = z (to_End T _),
+        by_cases sum.inl e ∈ T a b ∨ sum.inr e ∈ T b a,
+        { rw [dif_pos h, to_End_eq_id T h], exact z.map_one.symm },
+        { rw [dif_neg h, zh] } },
+      ext,
+      have : (functorial_of_mul_hom T z).map' x = (functorial_of_mul_hom T ghom).map' x,
+      { rw [this, sane] },
+      convert this; rw End_to_End }    
+  end }
