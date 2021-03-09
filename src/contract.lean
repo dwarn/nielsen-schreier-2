@@ -1,6 +1,4 @@
-import free
-       quiver
-       misc
+import free quiver misc
 
 open_locale classical
 
@@ -51,9 +49,10 @@ begin
     simp only [this, path_to_hom, is_iso.inv_hom_id, category.comp_id, category.assoc] },
 end
 
-def functorial_of_mul_hom {X} [group X] (f : (End (default G)) →* X) :
-  functorial (λ (g : G), single_obj.star X) :=
-{ map := λ a b p, f (to_End T p),
+def functor_of_mul_hom {X} [group X] (f : (End (default G)) →* X) :
+  G ⥤ single_obj X :=
+{ obj := λ _, (),
+  map := λ a b p, f (to_End T p),
   map_id' := begin intro a, convert f.map_one, simp [to_End] end,
   map_comp' := begin
     intros a b c p q,
@@ -74,55 +73,57 @@ def contract : is_free_group (End (default G)) :=
   gp_emb := λ tp, to_End T (gpd_emb tp.val.edge),
   gp_lift := begin
     introsI X _ f,
-    let f' : quiver_hom gpd_gens ♯(single_obj X) := 
-    { obj := λ _, (),
-      edge := λ a b e, if h : (sum.inl e ∈ T a b ∨ sum.inr e ∈ T b a) then 𝟙 _
-                       else f ⟨⟨a, b, e⟩, h⟩ },
-    rcases gpd_lift f' with ⟨F, hF, uF⟩,
-    resetI,
-    have map_eq_map' : ∀ {a b : G} (p : a ⟶ b), map f'.obj p = F.map' p := λ _ _ _, rfl,
+    let f' : valu gpd_gens X := λ a b e,
+      if h : (sum.inl e ∈ T a b ∨ sum.inr e ∈ T b a) then 1
+      else f ⟨⟨a, b, e⟩, h⟩,
+    rcases gpd_lift @f' with ⟨F, hF, uF⟩,
     have F_path_to_hom : ∀ {a : G} {p : (¡T).path (default G) a},
-      map f'.obj (path_to_hom T p) = 𝟙 _,
+      F.map (path_to_hom T p) = 1,
     { intros a p,
       induction p with b c p e ih,
-      { apply functorial.map_id },
+      { apply F.map_id },
       rcases e with ⟨e, eT⟩,
       rcases e with e | e,
-      { change map f'.obj (_ ≫ _ ) = _,
-        rw [functorial.map_comp, ih, map_eq_map', ←hF],
+      { change F.map (_ ≫ _ ) = _,
+        rw [functor.map_comp, ih, ←hF],
         change _ ≫ dite _ _ _ = _,
         rw dif_pos (or.inl eT),
-        apply category.comp_id },
-      { change map f'.obj (_ ≫ inv _) = _,
-        rw [functorial.map_comp, ih, functorial.map_inv],
-        suffices : map f'.obj (gpd_emb e) = 𝟙 _,
-        { simp only [this, is_iso.comp_inv_eq, category.comp_id] },
-        rw [map_eq_map', ←hF],
+        apply mul_one },
+      { change F.map (_ ≫ inv _) = _,
+        rw [F.map_comp, ih, F.map_inv],
+        suffices : F.map (gpd_emb e) = 1,
+        { rw [is_iso.comp_inv_eq, this], symmetry, apply mul_one },
+        rw ←hF,
         change dite _ _ _ = _,
         rw dif_pos (or.inr eT) } },
-    let ghom : (End (default G)) →* X := functor.map_End (default G) (functor.of f'.obj),
-    have sane : functorial_of_mul_hom T ghom = F,
-    { rw functorial_ext, intros,
-      change map f'.obj ((path_to_hom T _) ≫ _ ≫ inv (path_to_hom T _)) = _,
-      rw [functorial.map_comp, functorial.map_comp, functorial.map_inv, 
-          F_path_to_hom, F_path_to_hom, map_eq_map'],
-      simp only [is_iso.comp_inv_eq, category.id_comp, category.comp_id] },
+    let ghom : (End (default G)) →* X := functor.map_End (default G) F,
+    have sane : functor_of_mul_hom T ghom = F,
+    { apply functor.hext, 
+      { intro, apply unit.ext }, 
+      intros, apply heq_of_eq,
+      change F.map ((path_to_hom T _) ≫ _ ≫ inv (path_to_hom T _)) =
+        (show single_obj.star X ⟶ (), from F.map f_1),
+      rw [F.map_comp, F.map_comp, F.map_inv, ←category.assoc,
+          is_iso.comp_inv_eq, F_path_to_hom, F_path_to_hom],
+      change _ * _ = _ * _,
+      rw [mul_one, one_mul],
+    },
     refine ⟨ghom, _, _⟩,
     { intro tp,
-      change f _ = (functorial_of_mul_hom T ghom).map' _,
+      change f _ = (functor_of_mul_hom T ghom).map _,
       rw [sane, ←hF], change f _ = dite _ _ _,
       rw dif_neg,
       { apply congr_arg, ext; refl },
       exact tp.property },
     { intros z zh,
-      have : functorial_of_mul_hom T z = F,
+      have : functor_of_mul_hom T z = F,
       { apply uF, intros a b e,
         change dite _ _ _ = z (to_End T _),
         by_cases sum.inl e ∈ T a b ∨ sum.inr e ∈ T b a,
         { rw [dif_pos h, to_End_eq_id T h], exact z.map_one.symm },
         { rw [dif_neg h, zh] } },
       ext,
-      have : (functorial_of_mul_hom T z).map' x = (functorial_of_mul_hom T ghom).map' x,
+      have : (functor_of_mul_hom T z).map x = (functor_of_mul_hom T ghom).map x,
       { rw [this, sane] },
       convert this; rw End_to_End },
   end }

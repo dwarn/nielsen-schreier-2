@@ -40,14 +40,16 @@ instance free_groupoid_directed_connected
   directed_connected (symmy gpd_gens : quiver G) :=
 { nonempty_path := λ a,
 begin 
-  have claim : ∀ (a b : G), (a ⟶ b) →
+  have claim : ∀ (a b : G) (f : a ⟶ b),
     (nonempty ((symmy gpd_gens).path (default _) a) ↔
      nonempty ((symmy gpd_gens).path (default _) b)),
-  { apply free_groupoid_induction,
-    { cc }, { cc }, { cc },
-    intros a b p, split; refine nonempty.map _; intro q,
-    { apply q.cons (sum.inl p) },
-    { apply q.cons (sum.inr p) }, },
+  { apply ind,
+    { intros a b e, split; apply nonempty.map; intro q; apply q.cons,
+      { exact sum.inl e}, 
+      { exact sum.inr e}, },
+    { intros, apply iff.refl },
+    { intros a b c f g, apply iff.trans },
+    { intros a b f, apply iff.symm } },
   refine (claim (default _) a _).mp ⟨quiver.path.nil⟩,
-  apply classical.choice, apply_instance,
+  { apply classical.choice, apply_instance },
 end }

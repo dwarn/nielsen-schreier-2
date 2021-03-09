@@ -7,23 +7,12 @@ universes v u
 
 def quiver (G : Type u) := G → G → Type v
 
+def valu {G} (p : quiver G) (X) :=
+Π {a b}, p a b → X
+
 def quiver_of_cat (C) [category C] : quiver C := has_hom.hom
 
-structure quiver_hom {G H} (p : quiver G) (q : quiver H) :=
-(obj : G → H)
-(edge : Π {a b : G}, p a b → q (obj a) (obj b))
-
-def qhom_over_id {G} (p q : quiver G) : Type* :=
-Π {a b : G}, p a b → q a b
-
 notation `♯` C := quiver_of_cat C
-
-def quiver_hom_of_functorial {C D} [category C] [category D]
-{obj : C → D} (f : functorial obj) : quiver_hom (♯C) (♯D) :=
-{ obj := obj,
-  edge := f.map }
-
-notation `♮` F := quiver_hom_of_functorial F
 
 def subquiver {G} (p : quiver G) :=
 Π a b : G, set (p a b)
