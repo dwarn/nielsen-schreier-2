@@ -86,7 +86,7 @@ begin -- todo: write this idiomatically
       exact le_trans (shortest_path_spec G p) h } }
 end
 
-instance geodesic_tree : is_tree ¡geodesic_subgraph G :=
+instance geodesic_tree : is_arbor ¡geodesic_subgraph G :=
 { unique_path := λ b,
   { default := geodesic_path G _ b (le_refl _),
     uniq := λ _, paths_are_unique G } }

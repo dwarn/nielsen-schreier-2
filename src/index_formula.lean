@@ -1,11 +1,13 @@
-import result
-       category_theory.action
-       covering
+import category_theory.action
+       result
 
 open_locale classical
 noncomputable theory
+open quotient_group is_free_group is_free_groupoid category_theory
 
-def tree_equiv {G} [inhabited G] (T : quiver G) [is_tree T] :
+universe u
+
+def tree_equiv {G} [inhabited G] (T : quiver G) [is_arbor T] :
   T.total ⊕ unit ≃ G :=
 { to_fun := λ x, sum.rec_on x (λ tp, tp.target) (λ _, default G),
   inv_fun := λ g, match g, (default $ T.path (default G) g) with 
@@ -26,7 +28,7 @@ def tree_equiv {G} [inhabited G] (T : quiver G) [is_tree T] :
     cases p; refl
   end }
 
-lemma tree_not_both {G} [inhabited G] (T : quiver G) [is_tree T] {a b : G} (e : T a b) (f : T b a) :
+lemma tree_not_both {G} [inhabited G] (T : quiver G) [is_arbor T] {a b : G} (e : T a b) (f : T b a) :
   false :=
 begin
   set q : T.path (default G) a := default _,
@@ -39,7 +41,7 @@ begin
   simpa only [self_eq_add_right] using this,
 end
 
-def tree_symmy_equiv {G} [inhabited G] {A : quiver.{0 0} G} (T : subquiver (symmy A)) [is_tree ¡T] :
+def tree_symmy_equiv {G} [inhabited G] {A : quiver G} (T : subquiver (symmy A)) [is_arbor ¡T] :
   tree_symmy T ≃ (¡T).total :=
 { to_fun := λ ht, if h : (sum.inl ht.val.edge) ∈ T ht.val.source ht.val.target
                   then ⟨_, _, sum.inl ht.val.edge, h⟩
@@ -63,9 +65,7 @@ def tree_symmy_equiv {G} [inhabited G] {A : quiver.{0 0} G} (T : subquiver (symm
       intro hn, exact tree_not_both (¡T) ⟨sum.inl e, hn⟩ ⟨sum.inr e, h⟩ }
   end }
 
-open quotient_group is_free_group is_free_groupoid category_theory
-
-def action_gens_equiv {G X : Type} [group G] [is_free_group G] [mul_action G X] :
+def action_gens_equiv {G X : Type u} [group G] [is_free_group G] [mul_action G X] :
   (gp_gens G) × X ≃ (gpd_gens : quiver (action_category G X)).total :=
 { to_fun := λ p, ⟨⟨(), p.snd⟩, ⟨(), ((gp_emb p.fst) • p.snd : X)⟩, p.fst, rfl⟩,
   inv_fun := λ t, (t.edge, t.source.snd),
@@ -76,7 +76,7 @@ def action_gens_equiv {G X : Type} [group G] [is_free_group G] [mul_action G X] 
     { exact proof_irrel_heq rfl h }
   end }
 
-def index_formula {G} [group.{0} G] [is_free_group G] (H : subgroup G) :
+def index_formula {G} [group G] [is_free_group G] (H : subgroup G) :
   (gp_gens G) × (quotient H) ⊕ unit ≃ (gp_gens H) ⊕ (quotient H) :=
 calc      (gp_gens G) × (quotient H) ⊕ unit 
         ≃ (gpd_gens : quiver $ action_category G (quotient H)).total ⊕ unit 

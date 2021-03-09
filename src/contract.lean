@@ -4,8 +4,8 @@ open_locale classical
 
 open category_theory is_free_groupoid
 
-universe v
-variables {G : Type} [groupoid.{v 0} G] [is_free_groupoid G] [inhabited G]
+universe u
+variables {G : Type u} [groupoid.{u u} G] [is_free_groupoid G] [inhabited G]
   (T : subquiver (symmy gpd_gens : quiver G))
 
 def path_to_hom : Π {a : G}, (¡T).path (default G) a → ((default G) ⟶ a)
@@ -13,7 +13,7 @@ def path_to_hom : Π {a : G}, (¡T).path (default G) a → ((default G) ⟶ a)
 | _ (quiver.path.cons p ⟨sum.inl f, _⟩) := (path_to_hom p) ≫ (gpd_emb f)
 | _ (quiver.path.cons p ⟨sum.inr f, _⟩) := (path_to_hom p) ≫ inv (gpd_emb f)
 
-variable [is_tree ¡T]
+variable [is_arbor ¡T]
 
 def favourite_hom (a : G) : (default G ⟶ a) :=
 path_to_hom T (default _)

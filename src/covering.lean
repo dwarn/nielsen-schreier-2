@@ -1,11 +1,11 @@
-import category_theory.functor
-       category_theory.action
+import category_theory.action
        group_theory.semidirect_product
        free
 
 open category_theory is_free_group semidirect_product
 
-instance action_category_is_free_groupoid {G A} [group G] [mul_action G A] [is_free_group G] :
+universe u
+instance action_category_is_free_groupoid {G A : Type u} [group G] [mul_action G A] [is_free_group G] :
   is_free_groupoid (action_category G A) :=
 let ac := (action_category.obj_equiv G A).symm in
 let gens := λ x y, { a : gp_gens G // (gp_emb a) • ac x = ac y } in

@@ -1,6 +1,4 @@
-import group_theory.group_action 
-       category_theory.groupoid
-       category_theory.action
+import category_theory.action
        quiver
        free
 
