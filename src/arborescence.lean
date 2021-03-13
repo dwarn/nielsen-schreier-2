@@ -6,21 +6,21 @@ variables {V : Type*} {G : quiver V} [inhabited V]
 
 local notation `root` := default V
 
-def length : Π {a : V} (p : G.path root a), ℕ
+def quiver.path.length {a} : Π {b : V} (p : quiver.path G a b), ℕ
 | _  quiver.path.nil       := 0
-| _ (quiver.path.cons p _) := length p + 1
+| _ (quiver.path.cons p _) := p.length + 1
 
 variables [directed_connected G] (G)
 
 /-- A path to `root` of minimal length. -/
 def shortest_path (a : V) : G.path root a :=
-well_founded.min (measure_wf $ λ p : G.path root a, length p) set.univ set.univ_nonempty
+well_founded.min (measure_wf $ λ p : G.path root a, p.length) set.univ set.univ_nonempty
 
 /-- The length of a path is at least the length of the shortest path -/
 lemma shortest_path_spec {a : V} (p : G.path root a) :
-  length (shortest_path G a) ≤ length p :=
+  (shortest_path G a).length ≤ p.length :=
 begin
-  have : ¬ (length p < length (shortest_path G a)) :=
+  have : ¬ (p.length < (shortest_path G a).length) :=
     well_founded.not_lt_min (measure_wf _) set.univ _ trivial,
   simpa using this,
 end
@@ -37,7 +37,7 @@ lemma paths_are_unique : ∀ {s : V} {p q : (¡geodesic_subgraph G).path root s}
   { refl },
   exfalso,
   rcases q_ᾰ_1 with ⟨_, _, h⟩,
-  have : length (shortest_path G root) ≤ 0 :=
+  have : (shortest_path G root).length ≤ 0 :=
     shortest_path_spec G quiver.path.nil,
   rw h at this,
   change _ + 1 ≤ 0 at this,
@@ -46,7 +46,7 @@ end
 | t (quiver.path.cons p e) := begin
   rcases e with ⟨_, _, h⟩,
   rintro ( _ | _ ),
-  { have : length (shortest_path G root) ≤ 0 :=
+  { have : (shortest_path G root).length ≤ 0 :=
       shortest_path_spec G quiver.path.nil,
     rw h at this,
     change _ + 1 ≤ 0 at this,
@@ -58,7 +58,7 @@ end
     apply paths_are_unique }
 end
 
-lemma geodesic_path : ∀ (gas : ℕ) (t : V), length (shortest_path G t) ≤ gas →
+def geodesic_path : Π (gas : ℕ) (t : V), (shortest_path G t).length ≤ gas →
       (¡geodesic_subgraph G).path root t :=
 begin -- todo: write this idiomatically
   intro gas,

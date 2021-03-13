@@ -34,8 +34,8 @@ begin
   set q : T.path (default G) a := default _,
   have : q = (q.cons e).cons f,
   { apply unique.default_eq },
-  apply_fun length at this,
-  change length q = length q + 2 at this,
+  apply_fun quiver.path.length at this,
+  change q.length = q.length + 2 at this,
   suffices : 2 = 0,
   { tauto },
   simpa only [self_eq_add_right] using this,
@@ -80,14 +80,14 @@ def index_formula {G} [group G] [is_free_group G] (H : subgroup G) :
   (gp_gens G) × (quotient H) ⊕ unit ≃ (gp_gens H) ⊕ (quotient H) :=
 calc      (gp_gens G) × (quotient H) ⊕ unit 
         ≃ (gpd_gens : quiver $ action_category G (quotient H)).total ⊕ unit 
-            : equiv.sum_congr action_gens_equiv (equiv.refl unit)
+                : equiv.sum_congr action_gens_equiv (equiv.refl unit)
     ... ≃ ((gp_gens H) ⊕ tree_symmy _) ⊕ unit
-            : equiv.sum_congr (compl_sum_set_equiv _).symm (equiv.refl unit)
-    ... ≃ (gp_gens H) ⊕ (tree_symmy (geodesic_subgraph (symmy gpd_gens)) ⊕ _)
-            : equiv.sum_assoc _ _ _
+                : equiv.sum_congr (compl_sum_set_equiv _).symm (equiv.refl unit)
+    ... ≃ (gp_gens H) ⊕ (tree_symmy (geodesic_subgraph (symmy gpd_gens)) ⊕ unit)
+                : equiv.sum_assoc _ _ _
     ... ≃ (gp_gens H) ⊕ ((quiver.total _) ⊕ unit)
-            : equiv.sum_congr (equiv.refl _) (equiv.sum_congr (tree_symmy_equiv _) (equiv.refl unit))
+                : equiv.sum_congr (equiv.refl _) (equiv.sum_congr (tree_symmy_equiv _) (equiv.refl unit))
     ... ≃ (gp_gens H) ⊕ action_category G (quotient H)
-            : equiv.sum_congr (equiv.refl _) (tree_equiv _) 
+                : equiv.sum_congr (equiv.refl _) (tree_equiv _) 
     ... ≃ (gp_gens H) ⊕ quotient H
-            : equiv.sum_congr (equiv.refl _) (action_category.obj_equiv G (quotient H)).symm
+                : equiv.sum_congr (equiv.refl _) (action_category.obj_equiv G (quotient H)).symm

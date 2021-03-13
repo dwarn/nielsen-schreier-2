@@ -2,6 +2,7 @@ import category_theory.single_obj
        category_theory.functor
        category_theory.elements
        category_theory.action
+       group_theory.free_group
        quiver
        misc
 open category_theory
@@ -42,6 +43,30 @@ begin
   { apply up, intros, apply hyp },
   cc,
 end
+
+def free_group_is_free_group (A) : is_free_group (free_group A) :=
+{ gp_gens := A,
+  gp_emb := free_group.of,
+  gp_lift := begin
+    introsI X _ f,
+    apply (free_group.lift.exists_unique_congr _).mp ⟨f, rfl, λ _, eq.symm⟩,
+    intro, simp only [function.funext_iff, free_group.lift.of],
+  end }
+
+noncomputable def iso_free_group_of_is_free_group {G} [group G] [is_free_group G] :
+  G ≃* free_group (gp_gens G) :=
+let ⟨F, hF, uF⟩ := classical.indefinite_description _ (gp_lift $ @free_group.of (gp_gens G)) in 
+{ to_fun := F,
+  inv_fun := free_group.lift gp_emb,
+  left_inv := by { change ∀ g, ((free_group.lift gp_emb).comp F) g = g,
+                   apply is_free_group_ext, simp [←hF] },
+  right_inv := begin
+    suffices : F.comp (free_group.lift gp_emb) = monoid_hom.id _,
+    { rwa monoid_hom.ext_iff at this },
+    apply free_group.ext_hom,
+    simp [←hF]
+  end,
+  map_mul' := F.map_mul }
 
 lemma is_free_group_induction {G} [group G] [is_free_group G]
   (P : G → Prop)
